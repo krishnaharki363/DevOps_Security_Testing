@@ -89,8 +89,6 @@
     "labels": ["security", "renovate"]
   },
 
-  "logLevel": "debug",
-
   "postUpgradeTasks": {
     "commands": [
       "npm install"
