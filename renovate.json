@@ -59,9 +59,11 @@
       "automerge": true
     },
     {
-      "description": "Require manual review for major version bumps",
+      "description": "Auto-merge major version bumps after CI passes",
       "matchUpdateTypes": ["major"],
-      "automerge": false,
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "squash",
       "labels": ["dependencies", "renovate", "major-update"],
       "prPriority": 5
     },
