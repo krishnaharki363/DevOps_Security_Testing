@@ -1,0 +1,95 @@
+name: CD — Deploy to Vercel
+
+on:
+  push:
+    branches:
+      - main
+
+  # Allow manual re-deploy
+  workflow_dispatch:
+
+jobs:
+  ##################################################
+  # Deploy to Vercel Production
+  ##################################################
+  deploy:
+    name: Deploy to Vercel Production
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      ##################################################
+      # Checkout
+      ##################################################
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      ##################################################
+      # Setup Node
+      ##################################################
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      ##################################################
+      # Install Dependencies
+      ##################################################
+      - name: Install Dependencies
+        run: npm ci
+
+      ##################################################
+      # Deployment Log — capture what's going out
+      ##################################################
+      - name: Log Deployment Context
+        run: |
+          echo "========================================"
+          echo "  Deploying to Vercel Production"
+          echo "  Commit SHA : ${{ github.sha }}"
+          echo "  Commit Msg : ${{ github.event.head_commit.message }}"
+          echo "  Author     : ${{ github.event.head_commit.author.name }}"
+          echo "  Triggered  : ${{ github.actor }}"
+          echo "  Branch     : ${{ github.ref_name }}"
+          echo "  Timestamp  : $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+          echo "========================================"
+
+      ##################################################
+      # Vercel CLI
+      ##################################################
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel Environment Information
+        run: |
+          vercel pull --yes \
+            --environment=production \
+            --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Deploy to Vercel Production
+        id: vercel-deploy
+        run: |
+          DEPLOY_URL=$(vercel deploy --prod --yes \
+            --token=${{ secrets.VERCEL_TOKEN }} 2>&1 | tail -1)
+          echo "deploy_url=$DEPLOY_URL" >> $GITHUB_OUTPUT
+          echo "Deployment URL: $DEPLOY_URL"
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      ##################################################
+      # Post-deploy confirmation log
+      ##################################################
+      - name: Log Deployment Success
+        run: |
+          echo "========================================"
+          echo "  Deployment Successful"
+          echo "  URL: ${{ steps.vercel-deploy.outputs.deploy_url }}"
+          echo "  Commit: ${{ github.sha }}"
+          echo "  Time: $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+          echo "========================================"

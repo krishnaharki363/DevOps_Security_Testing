@@ -1,0 +1,105 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Renovate config: auto-detects dependency updates, opens PRs, logs changes, auto-merges if CI passes",
+
+  "extends": [
+    "config:base"
+  ],
+
+  "timezone": "UTC",
+  "schedule": ["every weekday"],
+
+  "labels": ["dependencies", "renovate"],
+  "assignees": [],
+  "reviewers": [],
+
+  "prCreation": "immediate",
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 2,
+
+  "dependencyDashboard": true,
+  "dependencyDashboardTitle": "Renovate Dependency Dashboard",
+
+  "commitMessagePrefix": "chore(deps):",
+  "commitMessageAction": "update",
+  "commitMessageTopic": "{{depName}}",
+  "commitMessageExtra": "from {{currentVersion}} to {{newVersion}}",
+
+  "rangeStrategy": "bump",
+
+  "packageRules": [
+    {
+      "description": "Auto-merge non-breaking patch and minor updates for devDependencies",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "squash"
+    },
+    {
+      "description": "Auto-merge patch updates for production dependencies",
+      "matchDepTypes": ["dependencies"],
+      "matchUpdateTypes": ["patch"],
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "squash"
+    },
+    {
+      "description": "Group all minor/patch lodash updates together",
+      "matchPackageNames": ["lodash"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "groupName": "lodash updates",
+      "automerge": true
+    },
+    {
+      "description": "Group all minor/patch minimatch updates",
+      "matchPackageNames": ["minimatch"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "groupName": "minimatch updates",
+      "automerge": true
+    },
+    {
+      "description": "Require manual review for major version bumps",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["dependencies", "renovate", "major-update"],
+      "prPriority": 5
+    },
+    {
+      "description": "Security vulnerability fixes — highest priority, auto-merge patch",
+      "matchDepTypes": ["dependencies", "devDependencies"],
+      "matchUpdateTypes": ["patch"],
+      "isVulnerabilityAlert": true,
+      "automerge": true,
+      "automergeType": "pr",
+      "labels": ["dependencies", "renovate", "security"],
+      "prPriority": 10
+    },
+    {
+      "description": "GitHub Actions version updates — auto-merge minor/patch",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true,
+      "groupName": "GitHub Actions updates"
+    }
+  ],
+
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security", "renovate"]
+  },
+
+  "logLevel": "debug",
+
+  "postUpgradeTasks": {
+    "commands": [
+      "npm install"
+    ],
+    "fileFilters": ["package-lock.json"],
+    "executionMode": "branch"
+  },
+
+  "npm": {
+    "stabilityDays": 3
+  }
+}

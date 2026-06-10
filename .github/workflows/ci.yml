@@ -1,0 +1,100 @@
+name: CI — Test, Lint & Security Scan
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened]
+
+  workflow_dispatch:
+
+jobs:
+  ##################################################
+  # CI: Install → Test → Snyk Scan
+  ##################################################
+  ci:
+    name: Install, Test & Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Tests
+        run: npm test
+
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
+      - name: Authenticate Snyk
+        run: snyk auth ${{ secrets.SNYK_TOKEN }}
+
+      - name: Snyk Scan — Log Results
+        run: |
+          echo "========================================"
+          echo "  Snyk Dependency Vulnerability Scan"
+          echo "  PR     : ${{ github.event.pull_request.title }}"
+          echo "  Branch : ${{ github.head_ref }}"
+          echo "  Commit : ${{ github.sha }}"
+          echo "  Actor  : ${{ github.actor }}"
+          echo "========================================"
+          snyk test --severity-threshold=medium --json | tee snyk-results.json || true
+          snyk test --severity-threshold=medium 2>&1 | tee snyk-summary.txt
+
+      - name: Upload Snyk Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: snyk-scan-results
+          path: |
+            snyk-results.json
+            snyk-summary.txt
+          retention-days: 30
+
+      - name: Fail if Medium+ Vulnerabilities Found
+        run: snyk test --severity-threshold=medium
+
+  ##################################################
+  # Auto-Merge (Renovate PRs only, after CI passes)
+  # Uses gh CLI — native GitHub merge, which fires
+  # the push event on main and triggers cd.yml
+  ##################################################
+  auto-merge:
+    name: Auto-Merge Renovate PR
+    needs: ci
+    runs-on: ubuntu-latest
+    if: |
+      github.event.pull_request.user.login == 'renovate[bot]' &&
+      needs.ci.result == 'success'
+
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Auto-Merge via GitHub CLI
+        run: |
+          echo "CI passed — merging Renovate PR #${{ github.event.pull_request.number }}"
+          gh pr merge ${{ github.event.pull_request.number }} \
+            --squash \
+            --auto \
+            --delete-branch \
+            --subject "${{ github.event.pull_request.title }}" \
+            --body "Auto-merged after passing CI:
+          - npm install ✓
+          - npm test ✓
+          - Snyk scan ✓"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
