@@ -8,6 +8,7 @@ on:
   pull_request:
     branches:
       - main
+      - feature/security-updates
     types: [opened, synchronize, reopened]
 
   workflow_dispatch:
