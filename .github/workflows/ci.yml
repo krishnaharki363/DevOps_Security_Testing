@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - feature/security-updates
+      - feature/security-updates
   pull_request:
     branches:
       - main
@@ -88,9 +89,12 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # FIX: Fetches full history so git can merge properly here
 
       - name: Ensure PR Exists and Merge
         run: |
+          # 1. Determine target branch and details
           CURRENT_BRANCH="${{ github.head_ref || github.ref_name }}"
           echo "Processing branch: $CURRENT_BRANCH"
           
