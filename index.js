@@ -8,7 +8,7 @@ const app = express();
 
 app.get('/', (req, res) => {
   const obj = lodash.cloneDeep({
-    message: 'Hello, DevSecOps by Krish Naharki!, Welcome to the world of secure coding and DevSecOps practices in cloud class.',
+    message: 'Hello, DevSecOps by Krish Naharbrhffehhf dnc ndf jndfni!, Welcome to the world of secure coding and DevSecOps practices in cloud class.',
   });
 
 
