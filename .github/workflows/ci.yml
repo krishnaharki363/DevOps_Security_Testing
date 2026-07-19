@@ -24,8 +24,6 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -88,9 +86,14 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # FIX: Fetches full history so git can merge properly here
 
       - name: Ensure PR Exists and Merge
         run: |
+          # FIX: Explicitly sync main branch history to prevent tracking reference errors
+          git fetch origin main
+
           CURRENT_BRANCH="${{ github.head_ref || github.ref_name }}"
           echo "Processing branch: $CURRENT_BRANCH"
           
